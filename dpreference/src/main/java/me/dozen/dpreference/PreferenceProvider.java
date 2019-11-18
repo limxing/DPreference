@@ -11,6 +11,7 @@ import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
@@ -21,12 +22,12 @@ public class PreferenceProvider extends ContentProvider {
 
     private static final String TAG = PreferenceProvider.class.getSimpleName();
 
-    private static final String AUTHORITY = "me.dozen.dpreference.PreferenceProvider";
+    private static String AUTHORITY = "me.dozen.dpreference.PreferenceProvider";
 
-    public static final String CONTENT_PREF_BOOLEAN_URI = "content://" + AUTHORITY + "/boolean/";
-    public static final String CONTENT_PREF_STRING_URI = "content://" + AUTHORITY + "/string/";
-    public static final String CONTENT_PREF_INT_URI = "content://" + AUTHORITY + "/integer/";
-    public static final String CONTENT_PREF_LONG_URI = "content://" + AUTHORITY + "/long/";
+    public static String CONTENT_PREF_BOOLEAN_URI = "content://" + AUTHORITY + "/boolean/";
+    public static String CONTENT_PREF_STRING_URI = "content://" + AUTHORITY + "/string/";
+    public static String CONTENT_PREF_INT_URI = "content://" + AUTHORITY + "/integer/";
+    public static String CONTENT_PREF_LONG_URI = "content://" + AUTHORITY + "/long/";
 
 
     public static final String PREF_KEY = "key";
@@ -37,19 +38,38 @@ public class PreferenceProvider extends ContentProvider {
     public static final int PREF_INT = 3;
     public static final int PREF_LONG = 4;
 
-    private static final UriMatcher sUriMatcher;
+    private static UriMatcher sUriMatcher;
 
     static {
+
+
+    }
+
+    @Override
+    public boolean onCreate() {
+        String name = null;
+        try {
+            Field field = ContentProvider.class.getDeclaredField("mAuthority");
+            field.setAccessible(true);
+            name = (String) field.get(this);
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        if (name != null) {
+            AUTHORITY = name;
+            CONTENT_PREF_BOOLEAN_URI = "content://" + AUTHORITY + "/boolean/";
+            CONTENT_PREF_STRING_URI = "content://" + AUTHORITY + "/string/";
+            CONTENT_PREF_INT_URI = "content://" + AUTHORITY + "/integer/";
+            CONTENT_PREF_LONG_URI = "content://" + AUTHORITY + "/long/";
+        }
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         sUriMatcher.addURI(AUTHORITY, "boolean/*/*", PREF_BOOLEAN);
         sUriMatcher.addURI(AUTHORITY, "string/*/*", PREF_STRING);
         sUriMatcher.addURI(AUTHORITY, "integer/*/*", PREF_INT);
         sUriMatcher.addURI(AUTHORITY, "long/*/*", PREF_LONG);
 
-    }
-
-    @Override
-    public boolean onCreate() {
         return true;
     }
 
@@ -116,7 +136,7 @@ public class PreferenceProvider extends ContentProvider {
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         PrefModel model = getPrefModelByUri(uri);
-        if(model == null) {
+        if (model == null) {
             throw new IllegalArgumentException("update prefModel is null");
         }
         switch (sUriMatcher.match(uri)) {
